@@ -18,12 +18,14 @@ def keep_alive():
     t = Thread(target=run)
     t.start()
 
-# --- Configurações dos IDs dos Canais ---
+# --- Configurações dos IDs dos Canais e Cargos ---
 TOKEN = os.environ.get("TOKEN")
 
 CANAL_ENTRADA_ID = 1561141242140557412    # Entrada
 CANAL_APROVACAO_ID = 1561141268770455602  # Aprovação
 CANAL_SAIU_ID = 1561141294800314428       # Saiu
+
+CARGO_APROVADO_ID = 1561161288573526056   # Cargo dado ao ser aprovado
 
 intents = discord.Intents.default()
 intents.members = True
@@ -83,7 +85,19 @@ class BotoesAprovacao(discord.ui.View):
 
     @discord.ui.button(label="Sim", style=discord.ButtonStyle.green)
     async def sim(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.edit_message(content=f"✅ {interaction.user.mention} **aprovou** a entrada de {self.membro.mention}.", view=None)
+        # Tenta adicionar o cargo ao membro
+        cargo = interaction.guild.get_role(CARGO_APROVADO_ID)
+        if cargo:
+            try:
+                await self.membro.add_roles(cargo)
+            except Exception as e:
+                await interaction.response.send_message(f"Erro ao adicionar o cargo: {e}", ephemeral=True)
+                return
+
+        await interaction.response.edit_message(
+            content=f"✅ {interaction.user.mention} **aprovou** a entrada de {self.membro.mention}. Cargo concedido!", 
+            view=None
+        )
 
     @discord.ui.button(label="Não", style=discord.ButtonStyle.red)
     async def nao(self, interaction: discord.Interaction, button: discord.ui.Button):
