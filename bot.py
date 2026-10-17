@@ -59,15 +59,23 @@ class ConvidouSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         quem_convidou_id = int(self.values[0])
+        
+        # Responde o usuário com a mensagem temporária (ephemeral)
         await interaction.response.send_message("Obrigado! Sua resposta foi enviada para a moderação.", ephemeral=True)
         
+        # Apaga a mensagem original de boas-vindas do canal de entrada
+        try:
+            await interaction.message.delete()
+        except Exception as e:
+            print(f"Erro ao deletar mensagem de entrada: {e}")
+
+        # Envia a notificação no canal de aprovação
         canal_aprovacao = interaction.guild.get_channel(CANAL_APROVACAO_ID)
         if canal_aprovacao:
             adm_selecionado = interaction.guild.get_member(quem_convidou_id)
             mencao_adm = adm_selecionado.mention if adm_selecionado else f"<@{quem_convidou_id}>"
             
             view = BotoesAprovacao(self.membro)
-            # Marca o administrador selecionado para aprovar o novo membro
             await canal_aprovacao.send(
                 content=f"{mencao_adm}, você deseja aprovar o/a {self.membro.mention} em seu servidor?",
                 view=view
@@ -85,7 +93,7 @@ class BotoesAprovacao(discord.ui.View):
 
     @discord.ui.button(label="Sim", style=discord.ButtonStyle.green)
     async def sim(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Tenta adicionar o cargo ao membro
+        # Adiciona o cargo ao membro aprovado
         cargo = interaction.guild.get_role(CARGO_APROVADO_ID)
         if cargo:
             try:
